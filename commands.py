@@ -3,11 +3,14 @@ from discord import app_commands
 import logging
 import asyncio
 import yt_dlp
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
 music_queues: dict[int, list[dict]] = {} # each key entry is a server id with its own queue
-now_playing: dict[int, dict] = {}
+now_playing: dict[int, dict] = {} # hold the current song
+chat_histories: dict[int, list[dict]] = {} # each user has their own chat history
 
 
 YDL_OPTIONS = {
@@ -22,6 +25,7 @@ FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn",
 }
+
 
 def get_queue(guild_id: int) -> list[dict]:
     """Get or create a queue for a server."""
@@ -60,9 +64,19 @@ def play_next(client: discord.Client, guild_id: int, voice_client: discord.Voice
         music_queues.pop(guild_id, None)
 
 
-def register_commands(client: discord.Client, tree: app_commands.CommandTree):
-    """Register all commands on the command tree"""
+def register_commands(client: discord.Client, tree: app_commands.CommandTree, gemini_api_key: str):
 
+    gemini_client = genai.Client(api_key=gemini_api_key)
+    
+    # enable we search with gemini
+    grounding_tool = types.Tool(
+        google_search=types.GoogleSearch()
+    )
+
+    config = types.GenerateContentConfig(
+        tools=[grounding_tool]
+    )
+    
     # General Commands
     @tree.command(name="ping", description="Check bot latency")
     async def ping(interaction: discord.Interaction):
@@ -77,6 +91,7 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree):
             f"/ping - get bot latency\n"
             f"/serverinfo - get number of members, channels, and when server was created\n"
             f"/avatar - get users avatar\n"
+            "\n"
             f"music commands\n"
             f"/play - play a song from youtube, url or search\n"
             f"/skip - skip current song\n"
@@ -84,7 +99,11 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree):
             f"/pause - pause current song\n"
             f"/resume - resume current song\n"
             f"/stop - stop playing, clear queue and exit\n"
-            f"/nowplaying - info about the current song\n")
+            f"/nowplaying - info about the current song\n"
+            "\n"
+            f"ai commands\n"
+            f"/ask - ask gemini 2.5 flash something\n"
+            f"/clearchat - clear user chat history\n")
 
 
     @tree.command(name="serverinfo", description="Get server info")
@@ -251,6 +270,57 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree):
         if queue:
             embed.add_field(name="Up Next", value=queue[0]["title"], inline=False)
         await interaction.response.send_message(embed=embed)
+
+
+    # ai gemini commands
+    @tree.command(name="ask", description="Ask Gemini AI a question")
+    @app_commands.describe(question="Your question")
+    async def ask(interaction: discord.Interaction, question: str):
+        await interaction.response.defer()
+
+        user_id = interaction.user.id
+
+        # if no history
+        if user_id not in chat_histories:
+            chat_histories[user_id] = []
+
+        chat_histories[user_id].append({
+            "role": "user",
+            "parts": [{"text": question}]
+        })
+
+        # Send full history to Gemini so it remembers context
+        response = await asyncio.to_thread(
+            gemini_client.models.generate_content,
+            model="gemini-2.5-flash",
+            contents=chat_histories[user_id],
+            config=config,
+        )
+
+        answer = response.text
+
+        # Save the AI's response to history
+        chat_histories[user_id].append({
+            "role": "model",
+            "parts": [{"text": answer}]
+        })
+
+        # Cap history at 20 messages to avoid token limits
+        if len(chat_histories[user_id]) > 20:
+            chat_histories[user_id] = chat_histories[user_id][-20:]
+
+        # Discord has a 2000 character limit
+        if len(answer) > 2000:
+            answer = answer[:1997] + "..."
+
+        await interaction.followup.send(answer)
+
+
+
+    @tree.command(name="clearchat", description="Clear your AI chat history")
+    async def clearchat(interaction: discord.Interaction):
+        chat_histories.pop(interaction.user.id, None)
+        await interaction.response.send_message("Chat history cleared", ephemeral=True)
 
 
     @tree.error

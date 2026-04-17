@@ -64,6 +64,7 @@ def play_next(client: discord.Client, guild_id: int, voice_client: discord.Voice
         asyncio.run_coroutine_threadsafe(delayed_disconnect(guild_id, voice_client), client.loop)
         music_queues.pop(guild_id, None)
 
+
 async def delayed_disconnect(guild_id: int, voice_client: discord.VoiceClient, delay: int = 300):
     """Wait before disconnecting. If music starts again, cancel the disconnect."""
     await asyncio.sleep(delay)
@@ -93,28 +94,26 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         latency = round(client.latency * 1000)
         await interaction.response.send_message(f"latency {latency}ms")
 
-
     @tree.command(name="help", description="list of commands")
     async def hello(interaction: discord.Interaction):
         await interaction.response.send_message(
-            f"general commands\n"
-            f"/ping - get bot latency\n"
-            f"/serverinfo - get number of members, channels, and when server was created\n"
-            f"/avatar - get users avatar\n"
+            "general commands\n"
+            "/ping - get bot latency\n"
+            "/serverinfo - get number of members, channels, and when server was created\n"
+            "/avatar - get users avatar\n"
             "\n"
-            f"music commands\n"
-            f"/play - play a song from youtube, url or search\n"
-            f"/skip - skip current song\n"
-            f"/queue - view current queue\n"
-            f"/pause - pause current song\n"
-            f"/resume - resume current song\n"
-            f"/stop - stop playing, clear queue and exit\n"
-            f"/nowplaying - info about the current song\n"
+            "music commands\n"
+            "/play - play a song from youtube, url or search\n"
+            "/skip - skip current song\n"
+            "/queue - view current queue\n"
+            "/pause - pause current song\n"
+            "/resume - resume current song\n"
+            "/stop - stop playing, clear queue and exit\n"
+            "/nowplaying - info about the current song\n"
             "\n"
-            f"ai commands\n"
-            f"/ask - ask gemini 2.5 flash something\n"
-            f"/clearchat - clear user chat history\n")
-
+            "ai commands\n"
+            "/ask - ask gemini 2.5 flash something\n"
+            "/clearchat - clear user chat history\n")
 
     @tree.command(name="serverinfo", description="Get server info")
     async def serverinfo(interaction: discord.Interaction):
@@ -127,7 +126,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         embed.add_field(name="Created", value=guild.created_at.strftime("%b %d, %Y"), inline=True)
         await interaction.response.send_message(embed=embed)
 
-
     @tree.command(name="avatar", description="Get a user's avatar")
     @app_commands.describe(user="The user to get the avatar of")
     async def avatar(interaction: discord.Interaction, user: discord.Member = None):
@@ -135,7 +133,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         embed = discord.Embed(title=f"{user.display_name}'s Avatar", color=discord.Color.blurple())
         embed.set_image(url=user.display_avatar.url)
         await interaction.response.send_message(embed=embed)
-
 
     # Music Commands
     @tree.command(name="play", description="Play a song from YouTube")

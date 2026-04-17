@@ -325,7 +325,9 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("Missing Permissions error", ephemeral=True)
         elif isinstance(error, app_commands.CommandOnCooldown):
-            await interaction.response.send_message(f"Command On Cooldown error {error.retry_after:.0f}s.", ephemeral=True)
+            await interaction.response.send_message(
+                f"Command On Cooldown error {error.retry_after:.0f}s.",
+                ephemeral=True)
         else:
             logger.error(f"Command error: {error}")
             if not interaction.response.is_done():

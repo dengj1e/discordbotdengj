@@ -8,15 +8,15 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-music_queues: dict[int, list[dict]] = {} # each key entry is a server id with its own queue
-now_playing: dict[int, dict] = {} # hold the current song
-chat_histories: dict[int, list[dict]] = {} # each user has their own chat history
+music_queues: dict[int, list[dict]] = {}  # each key entry is a server id with its own queue
+now_playing: dict[int, dict] = {}  # hold the current song
+chat_histories: dict[int, list[dict]] = {}  # each user has their own chat history
 
 
 YDL_OPTIONS = {
-    "format": "bestaudio/best",    
-    "noplaylist": True,           
-    "quiet": True,                
+    "format": "bestaudio/best",
+    "noplaylist": True,
+    "quiet": True,
     "no_warnings": True,
     "default_search": "ytsearch",
 }
@@ -55,7 +55,7 @@ def play_next(client: discord.Client, guild_id: int, voice_client: discord.Voice
     queue = get_queue(guild_id)
     if queue:
         song = queue.pop(0)
-        now_playing[guild_id] = song 
+        now_playing[guild_id] = song
         source = discord.FFmpegPCMAudio(song["url"], **FFMPEG_OPTIONS)
         voice_client.play(source, after=lambda e: play_next(client, guild_id, voice_client))
     elif voice_client.is_connected():
@@ -66,7 +66,7 @@ def play_next(client: discord.Client, guild_id: int, voice_client: discord.Voice
 
 async def delayed_disconnect(guild_id: int, voice_client: discord.VoiceClient, delay: int = 300):
     """Wait before disconnecting. If music starts again, cancel the disconnect."""
-    await asyncio.sleep(delay) 
+    await asyncio.sleep(delay)
 
     # Only disconnect if still not playing anything
     if voice_client.is_connected() and not voice_client.is_playing():
@@ -77,7 +77,7 @@ async def delayed_disconnect(guild_id: int, voice_client: discord.VoiceClient, d
 def register_commands(client: discord.Client, tree: app_commands.CommandTree, gemini_api_key: str):
 
     gemini_client = genai.Client(api_key=gemini_api_key)
-    
+
     # enable we search with gemini
     grounding_tool = types.Tool(
         google_search=types.GoogleSearch()
@@ -86,7 +86,7 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
     config = types.GenerateContentConfig(
         tools=[grounding_tool]
     )
-    
+
     # General Commands
     @tree.command(name="ping", description="Check bot latency")
     async def ping(interaction: discord.Interaction):

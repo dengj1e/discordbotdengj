@@ -24,7 +24,7 @@ tree = discord.app_commands.CommandTree(client)
 # Register all slash commands from commands.py
 register_commands(client, tree, GEMINI_API_KEY)
 
-#Events
+# Events
 @client.event
 async def on_ready():
     try:

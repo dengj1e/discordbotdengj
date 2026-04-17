@@ -49,3 +49,14 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/discord-bot:latest
+
+deploy:
+    runs-on: self-hosted
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Pull and restart bot
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/discord-bot:latest
+          cd ~/discord_bot
+          docker compose up -d

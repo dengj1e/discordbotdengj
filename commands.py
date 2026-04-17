@@ -60,8 +60,18 @@ def play_next(client: discord.Client, guild_id: int, voice_client: discord.Voice
         voice_client.play(source, after=lambda e: play_next(client, guild_id, voice_client))
     elif voice_client.is_connected():
         # Queue is empty, disconnect after a short delay
-        asyncio.run_coroutine_threadsafe(voice_client.disconnect(), client.loop)
+        now_playing.pop(guild_id, None)
+        asyncio.run_coroutine_threadsafe(delayed_disconnect(guild_id, voice_client), client.loop)
         music_queues.pop(guild_id, None)
+
+async def delayed_disconnect(guild_id: int, voice_client: discord.VoiceClient, delay: int = 300):
+    """Wait before disconnecting. If music starts again, cancel the disconnect."""
+    await asyncio.sleep(delay) 
+
+    # Only disconnect if still not playing anything
+    if voice_client.is_connected() and not voice_client.is_playing():
+        now_playing.pop(guild_id, None)
+        await voice_client.disconnect()
 
 
 def register_commands(client: discord.Client, tree: app_commands.CommandTree, gemini_api_key: str):

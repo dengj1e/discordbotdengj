@@ -27,6 +27,7 @@ register_commands(client, tree, GEMINI_API_KEY)
 if not discord.opus.is_loaded():
     discord.opus.load_opus('libopus.so.0')
 
+
 # Events
 @client.event
 async def on_ready():

@@ -4,7 +4,10 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy and install dependencies first (better caching)
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsodium-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .

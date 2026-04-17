@@ -174,7 +174,7 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         else:
             now_playing[interaction.guild.id] = song
             source = discord.FFmpegPCMAudio(song["url"], **FFMPEG_OPTIONS)
-            
+
             # when the audio stops for any reason, run play_next()
             voice_client.play(source, after=lambda e: play_next(client, interaction.guild.id, voice_client))
             embed = discord.Embed(
@@ -183,7 +183,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
                 color=discord.Color.green()
             )
             await interaction.followup.send(embed=embed)
-
 
     @tree.command(name="skip", description="Skip the current song")
     async def skip(interaction: discord.Interaction):
@@ -205,7 +204,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
 
         voice_client.stop()
 
-
     @tree.command(name="queue", description="Show the music queue")
     async def queue(interaction: discord.Interaction):
         q = get_queue(interaction.guild.id)
@@ -220,7 +218,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         embed = discord.Embed(title="Music Queue", description=songs, color=discord.Color.blue())
         await interaction.response.send_message(embed=embed)
 
-
     @tree.command(name="pause", description="Pause the current song")
     async def pause(interaction: discord.Interaction):
         voice_client = interaction.guild.voice_client
@@ -230,7 +227,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         else:
             await interaction.response.send_message("Nothing is playing.", ephemeral=True)
 
-
     @tree.command(name="resume", description="Resume the paused song")
     async def resume(interaction: discord.Interaction):
         voice_client = interaction.guild.voice_client
@@ -239,7 +235,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
             await interaction.response.send_message("Resumed")
         else:
             await interaction.response.send_message("Nothing is paused", ephemeral=True)
-
 
     @tree.command(name="stop", description="Stop music and clear the queue")
     async def stop(interaction: discord.Interaction):
@@ -260,7 +255,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         except Exception as e:
             logger.error(f"Stop command error: {e}")
 
-
     @tree.command(name="nowplaying", description="Show what's currently playing")
     async def nowplaying(interaction: discord.Interaction):
         song = now_playing.get(interaction.guild.id)
@@ -277,7 +271,6 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
         if queue:
             embed.add_field(name="Up Next", value=queue[0]["title"], inline=False)
         await interaction.response.send_message(embed=embed)
-
 
     # ai gemini commands
     @tree.command(name="ask", description="Ask Gemini AI a question")
@@ -322,13 +315,10 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
 
         await interaction.followup.send(answer)
 
-
-
     @tree.command(name="clearchat", description="Clear your AI chat history")
     async def clearchat(interaction: discord.Interaction):
         chat_histories.pop(interaction.user.id, None)
         await interaction.response.send_message("Chat history cleared", ephemeral=True)
-
 
     @tree.error
     async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):

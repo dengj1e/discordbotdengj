@@ -24,9 +24,22 @@ jobs:
       - name: Run linter
         run: flake8 . --max-line-length=120 --exclude=.git
 
+  test:
+    runs-on: ubuntu-latest
+    needs: lint                  # waits for lint to pass
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Run tests
+        run: pytest tests/ -v
+
   build-and-push:
     runs-on: ubuntu-latest
-    needs: lint                  # only runs if lint passes
+    needs: test                  # only runs if test passes
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     permissions:

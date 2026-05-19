@@ -27,6 +27,42 @@ FFMPEG_OPTIONS = {
 }
 
 
+async def ask_gemini(
+    gemini_client,
+    histories: dict[int, list[dict]],
+    user_id: int,
+    question: str,
+    config=None,
+    model: str = "gemini-2.5-flash",
+    max_history: int = 20,
+) -> str:
+    if user_id not in histories:
+        histories[user_id] = []
+
+    histories[user_id].append({"role": "user", "parts": [{"text": question}]})
+
+    response = await asyncio.to_thread(
+        gemini_client.models.generate_content,
+        model=model,
+        contents=histories[user_id],
+        config=config,
+    )
+    answer = response.text
+
+    histories[user_id].append({"role": "model", "parts": [{"text": answer}]})
+
+    if len(histories[user_id]) > max_history:
+        histories[user_id] = histories[user_id][-max_history:]
+
+    return answer
+
+
+def truncate_for_discord(text: str, limit: int = 2000) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
 def get_queue(guild_id: int) -> list[dict]:
     """Get or create a queue for a server."""
     if guild_id not in music_queues:
@@ -277,43 +313,14 @@ def register_commands(client: discord.Client, tree: app_commands.CommandTree, ge
     @app_commands.describe(question="Your question")
     async def ask(interaction: discord.Interaction, question: str):
         await interaction.response.defer()
-
-        user_id = interaction.user.id
-
-        # if no history
-        if user_id not in chat_histories:
-            chat_histories[user_id] = []
-
-        chat_histories[user_id].append({
-            "role": "user",
-            "parts": [{"text": question}]
-        })
-
-        # Send full history to Gemini so it remembers context
-        response = await asyncio.to_thread(
-            gemini_client.models.generate_content,
-            model="gemini-2.5-flash",
-            contents=chat_histories[user_id],
+        answer = await ask_gemini(
+            gemini_client,
+            chat_histories,
+            interaction.user.id,
+            question,
             config=config,
         )
-
-        answer = response.text
-
-        # Save the AI's response to history
-        chat_histories[user_id].append({
-            "role": "model",
-            "parts": [{"text": answer}]
-        })
-
-        # Cap history at 20 messages to avoid token limits
-        if len(chat_histories[user_id]) > 20:
-            chat_histories[user_id] = chat_histories[user_id][-20:]
-
-        # Discord has a 2000 character limit
-        if len(answer) > 2000:
-            answer = answer[:1997] + "..."
-
-        await interaction.followup.send(answer)
+        await interaction.followup.send(truncate_for_discord(answer))
 
     @tree.command(name="clearchat", description="Clear your AI chat history")
     async def clearchat(interaction: discord.Interaction):

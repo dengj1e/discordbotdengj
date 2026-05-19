@@ -44,10 +44,23 @@ async def test_history_caps_at_max(fake_client):
 
 async def test_full_history_sent_to_gemini(fake_client):
     histories = {}
+    captured = []
+
+    def snapshot(*args, **kwargs):
+        captured.append(list(kwargs["contents"]))
+        response = MagicMock()
+        response.text = "AI response"
+        return response
+
+    fake_client.models.generate_content.side_effect = snapshot
+
     await ask_gemini(fake_client, histories, 1, "first")
     await ask_gemini(fake_client, histories, 1, "second")
-    second_call = fake_client.models.generate_content.call_args_list[1]
-    assert len(second_call.kwargs["contents"]) == 3
+
+    assert len(captured[1]) == 3
+    assert captured[1][0]["parts"][0]["text"] == "first"
+    assert captured[1][1]["role"] == "model"
+    assert captured[1][2]["parts"][0]["text"] == "second"
 
 
 def test_truncate_under_limit_unchanged():
